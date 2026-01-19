@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTSP CCTV Streamer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg: #0f172a;
+            --bg-alt: #111827;
+            --panel: #0b1224;
+            --panel-soft: rgba(15, 23, 42, 0.72);
+            --accent: #f97316;
+            --accent-strong: #fb923c;
+            --text: #e2e8f0;
+            --text-soft: #94a3b8;
+            --success: #22c55e;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+            --shadow: 0 25px 60px rgba(15, 23, 42, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at top, #1e293b, transparent 55%),
+                        linear-gradient(135deg, #0f172a 0%, #111827 45%, #0b1224 100%);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .app {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: grid;
+            gap: 28px;
+        }
+
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 0 0 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(28px, 4vw, 44px);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            margin: 8px 0 0;
+            color: var(--text-soft);
+            max-width: 540px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            padding: 14px 18px;
+            border-radius: 16px;
+            background: rgba(249, 115, 22, 0.12);
+            color: var(--accent-strong);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            text-align: center;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }
+
+        .layout.no-sidebar {
+            grid-template-columns: 1fr;
+        }
+
+        .layout.no-sidebar aside {
+            display: none;
+        }
+
+        .card {
+            background: var(--panel-soft);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+        }
+
+        .card h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-soft);
+            margin-bottom: 8px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(15, 23, 42, 0.7);
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: rgba(148, 163, 184, 0.6);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #0b1120;
+            box-shadow: 0 12px 24px rgba(249, 115, 22, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--text);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fecaca;
+        }
+
+        .status {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            display: none;
+        }
+
+        .status.connecting {
+            background: rgba(251, 191, 36, 0.14);
+            color: #fde68a;
+        }
+
+        .status.connected {
+            background: rgba(34, 197, 94, 0.16);
+            color: #bbf7d0;
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.16);
+            color: #fecaca;
+        }
+
+        .saved-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .saved-item {
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(15, 23, 42, 0.65);
+            display: grid;
+            gap: 10px;
+        }
+
+        .saved-item strong {
+            font-size: 13px;
+            word-break: break-all;
+        }
+
+        .saved-meta {
+            font-size: 11px;
+            color: var(--text-soft);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .saved-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .toolbar label {
+            margin: 0;
+        }
+
+        .toolbar .preset {
+            min-width: 180px;
+        }
+
+        .stream-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .stream-grid[data-layout="single"] {
+            grid-template-columns: 1fr;
+        }
+
+        .stream-grid[data-layout="quad"] {
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+        }
+
+        .stream-grid[data-layout="nine"] {
+            grid-template-columns: repeat(3, minmax(180px, 1fr));
+        }
+
+        .stream-grid[data-layout="sixteen"] {
+            grid-template-columns: repeat(4, minmax(160px, 1fr));
+        }
+
+        .stream-grid[data-layout="focus"] {
+            grid-template-columns: 2fr 1fr;
+        }
+
+        .stream-grid[data-layout="focus"] .stream-card:first-child {
+            grid-row: span 2;
+        }
+
+        .stream-card {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 16px;
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .app.compact .card {
+            padding: 14px;
+        }
+
+        .app.compact .stream-grid {
+            gap: 10px;
+        }
+
+        .app.compact .stream-card {
+            padding: 10px;
+            gap: 8px;
+        }
+
+        .app.compact .stream-card h3 {
+            font-size: 12px;
+        }
+
+        .app.compact .stream-meta {
+            font-size: 10px;
+        }
+
+        .app.compact .actions,
+        .app.compact .stream-actions {
+            gap: 6px;
+        }
+
+        .stream-card h3 {
+            margin: 0;
+            font-size: 14px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-soft);
+        }
+
+        .video-shell {
+            border-radius: 14px;
+            overflow: hidden;
+            background: #05070f;
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            display: block;
+            background: #05070f;
+        }
+
+        .stream-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 10px 12px;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.65) 0%, rgba(15, 23, 42, 0.0) 60%);
+        }
+
+        .overlay-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 600;
+            color: var(--accent-strong);
+        }
+
+        .overlay-time {
+            font-size: 11px;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text);
+            background: rgba(15, 23, 42, 0.6);
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .stream-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .stream-meta {
+            font-size: 11px;
+            color: var(--text-soft);
+            font-family: 'IBM Plex Mono', monospace;
+            word-break: break-all;
+        }
+
+        .snapshots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .snapshots-grid img {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            object-fit: cover;
+            aspect-ratio: 16 / 9;
+        }
+
+        .toggle-active {
+            box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.6);
+            color: var(--accent-strong);
+        }
+
+        @media (max-width: 980px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Live Monitoring</p>
+                <h1>RTSP Control Deck</h1>
+                <p class="subtitle">Stream, snapshot, and manage multiple CCTV feeds with a live grid and saved stream library.</p>
+            </div>
+            <div class="badge">Multi-Stream</div>
+        </header>
+
+        <div class="layout">
+            <aside class="panel">
+                <div class="card">
+                    <h2>Connect</h2>
+                    <label for="rtspUrl">RTSP URL</label>
+                    <input type="text" id="rtspUrl" placeholder="rtsp://admin:password@192.168.1.100:554/Streaming/Channels/101" />
+
+                    <label for="streamLabel">Label</label>
+                    <input type="text" id="streamLabel" placeholder="Lobby Entrance" />
+
+                    <label for="streamNotes">Notes</label>
+                    <textarea id="streamNotes" placeholder="Camera angle, location, or special notes."></textarea>
+
+                    <div class="actions">
+                        <button id="startStream" class="btn-primary">Add Stream</button>
+                    </div>
+
+                    <div id="status" class="status"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Saved Streams</h2>
+                    <div id="savedList" class="saved-list"></div>
+                </div>
+
+                <div class="card">
+                    <h2>Last Session</h2>
+                    <div id="lastSessionList" class="saved-list"></div>
+                </div>
+            </aside>
+
+            <section class="panel">
+                <div class="card">
+                    <div class="toolbar">
+                        <div>
+                            <label for="presetSelect">Preset</label>
+                            <select id="presetSelect" class="preset">
+                                <option value="default">Operator Desk</option>
+                                <option value="lobby">Lobby Wall</option>
+                                <option value="perimeter">Perimeter Sweep</option>
+                                <option value="incident">Incident Focus</option>
+                                <option value="matrix">Matrix Max</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="layoutSelect">Layout</label>
+                            <select id="layoutSelect">
+                                <option value="single">Single</option>
+                                <option value="quad" selected>2 x 2</option>
+                                <option value="focus">Focus + Side</option>
+                                <option value="nine">3 x 3</option>
+                                <option value="sixteen">4 x 4</option>
+                            </select>
+                        </div>
+                        <button id="toggleCompact" class="btn-secondary" type="button">Compact</button>
+                        <button id="toggleSidebar" class="btn-secondary" type="button">Hide Sidebar</button>
+                    </div>
+
+                    <div id="streamGrid" class="stream-grid" data-layout="quad"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const rtspUrlInput = document.getElementById('rtspUrl');
+        const streamLabelInput = document.getElementById('streamLabel');
+        const streamNotesInput = document.getElementById('streamNotes');
+        const startButton = document.getElementById('startStream');
+        const statusDiv = document.getElementById('status');
+        const savedList = document.getElementById('savedList');
+        const lastSessionList = document.getElementById('lastSessionList');
+        const streamGrid = document.getElementById('streamGrid');
+        const layoutSelect = document.getElementById('layoutSelect');
+        const presetSelect = document.getElementById('presetSelect');
+        const layoutContainer = document.querySelector('.layout');
+        const appContainer = document.querySelector('.app');
+        const toggleCompact = document.getElementById('toggleCompact');
+        const toggleSidebar = document.getElementById('toggleSidebar');
+
+        const activeStreams = new Map();
+
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        function hideStatus() {
+            statusDiv.style.display = 'none';
+        }
+
+        function formatDate(value) {
+            if (!value) return 'Unknown';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleString();
+        }
+
+        async function readJsonResponse(response) {
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                return response.json();
+            }
+            const text = await response.text();
+            if (text && text.trim().startsWith('<')) {
+                return { error: 'Endpoint unavailable. Restart the server and try again.' };
+            }
+            return { error: text || 'Unexpected response' };
+        }
+
+        function addSnapshot(streamId, fileUrl, fileName) {
+            const stream = activeStreams.get(streamId);
+            if (!stream) return;
+            const img = document.createElement('img');
+            img.src = `${fileUrl}?t=${Date.now()}`;
+            img.alt = `Snapshot ${fileName}`;
+            stream.snapshots.prepend(img);
+        }
+
+        function startOverlayClock(streamId, timeEl) {
+            const update = () => {
+                timeEl.textContent = new Date().toLocaleTimeString();
+            };
+            update();
+            const intervalId = setInterval(update, 1000);
+            const stream = activeStreams.get(streamId);
+            if (stream) {
+                stream.clockInterval = intervalId;
+            }
+        }
+
+        function createStreamCard(streamId, rtspUrl, label, notes) {
+            const card = document.createElement('div');
+            card.className = 'stream-card';
+            card.dataset.streamId = streamId;
+
+            const title = document.createElement('h3');
+            title.textContent = label || `Stream ${streamId.slice(0, 8)}`;
+
+            const meta = document.createElement('div');
+            meta.className = 'stream-meta';
+            meta.textContent = rtspUrl;
+
+            const details = document.createElement('div');
+            details.className = 'stream-meta';
+            const detailLines = [`ID: ${streamId.slice(0, 8)}`];
+            if (notes) {
+                detailLines.push(`Notes: ${notes}`);
+            }
+            details.textContent = detailLines.join(' | ');
+
+            const videoShell = document.createElement('div');
+            videoShell.className = 'video-shell';
+
+            const video = document.createElement('video');
+            video.controls = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.src = `/stream/${streamId}/playlist.m3u8`;
+            videoShell.appendChild(video);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'stream-overlay';
+
+            const overlayLabel = document.createElement('div');
+            overlayLabel.className = 'overlay-label';
+            overlayLabel.textContent = (label || `Stream ${streamId.slice(0, 8)}`).toUpperCase();
+
+            const overlayTime = document.createElement('div');
+            overlayTime.className = 'overlay-time';
+
+            overlay.appendChild(overlayLabel);
+            overlay.appendChild(overlayTime);
+            videoShell.appendChild(overlay);
+
+            const actions = document.createElement('div');
+            actions.className = 'stream-actions';
+
+            const stopButton = document.createElement('button');
+            stopButton.className = 'btn-danger';
+            stopButton.textContent = 'Stop';
+            stopButton.addEventListener('click', () => stopStream(streamId));
+
+            const captureButton = document.createElement('button');
+            captureButton.className = 'btn-secondary';
+            captureButton.textContent = 'Screenshot';
+            captureButton.addEventListener('click', () => captureScreenshot(streamId, captureButton));
+
+            actions.appendChild(stopButton);
+            actions.appendChild(captureButton);
+
+            const snapshots = document.createElement('div');
+            snapshots.className = 'snapshots-grid';
+
+            card.appendChild(title);
+            card.appendChild(meta);
+            card.appendChild(details);
+            card.appendChild(videoShell);
+            card.appendChild(actions);
+            card.appendChild(snapshots);
+
+            streamGrid.prepend(card);
+
+            activeStreams.set(streamId, {
+                id: streamId,
+                rtspUrl,
+                label,
+                notes,
+                card,
+                video,
+                snapshots,
+                clockInterval: null
+            });
+
+            startOverlayClock(streamId, overlayTime);
+        }
+
+        async function startStream(rtspUrl) {
+            if (!rtspUrl) {
+                showStatus('RTSP URL is required.', 'error');
+                return;
+            }
+
+            showStatus('Connecting to stream...', 'connecting');
+            startButton.disabled = true;
+
+            try {
+                const label = streamLabelInput.value.trim();
+                const notes = streamNotesInput.value.trim();
+                const response = await fetch('/start-stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ rtspUrl, label, notes })
+                });
+
+                const data = await readJsonResponse(response);
+
+                if (response.ok) {
+                    createStreamCard(data.streamId, rtspUrl, data.label || label, data.notes || notes);
+                    showStatus('Stream connected successfully', 'connected');
+                    saveFormState({ rtspUrl, label, notes });
+                    updateLastSession({ rtspUrl, label, notes });
+                    await loadSavedStreams();
+                } else {
+                    showStatus(`Error: ${data.error || 'Failed to start stream'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Connection error: ${error.message}`, 'error');
+            } finally {
+                startButton.disabled = false;
+            }
+        }
+
+        async function stopStream(streamId) {
+            const stream = activeStreams.get(streamId);
+            if (!stream) return;
+
+            try {
+                await fetch(`/stop-stream/${streamId}`, {
+                    method: 'POST'
+                });
+            } catch (error) {
+                console.error('Error stopping stream:', error);
+            }
+
+            if (stream.clockInterval) {
+                clearInterval(stream.clockInterval);
+            }
+            stream.card.remove();
+            activeStreams.delete(streamId);
+        }
+
+        async function captureScreenshot(streamId, button) {
+            if (!streamId) return;
+
+            try {
+                button.disabled = true;
+                const response = await fetch(`/screenshot/${streamId}`, {
+                    method: 'POST'
+                });
+                const data = await readJsonResponse(response);
+
+                if (response.ok) {
+                    addSnapshot(streamId, data.fileUrl, data.fileName);
+                } else {
+                    showStatus(`Screenshot failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Screenshot failed: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function updateSavedStream(rtspUrl, label, notes) {
+            try {
+                const response = await fetch('/saved-streams/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ rtspUrl, label, notes })
+                });
+
+                const data = await readJsonResponse(response);
+                if (!response.ok) {
+                    showStatus(`Save failed: ${data.error || 'Unknown error'}`, 'error');
+                    return;
+                }
+
+                await loadSavedStreams();
+            } catch (error) {
+                showStatus(`Save failed: ${error.message}`, 'error');
+            }
+        }
+
+        function updateLastSession(entry) {
+            const current = loadLastSession();
+            const existingIndex = current.findIndex((item) => item.rtspUrl === entry.rtspUrl);
+            const nextEntry = {
+                rtspUrl: entry.rtspUrl,
+                label: entry.label || '',
+                notes: entry.notes || '',
+                lastUsedAt: new Date().toISOString()
+            };
+
+            if (existingIndex >= 0) {
+                current.splice(existingIndex, 1);
+            }
+            current.unshift(nextEntry);
+            if (current.length > 8) {
+                current.length = 8;
+            }
+            saveLastSession(current);
+            renderLastSession(current);
+        }
+
+        function renderLastSession(entries) {
+            lastSessionList.innerHTML = '';
+            if (!entries.length) {
+                const empty = document.createElement('div');
+                empty.className = 'saved-meta';
+                empty.textContent = 'No recent streams yet.';
+                lastSessionList.appendChild(empty);
+                return;
+            }
+
+            entries.forEach((entry) => {
+                const item = document.createElement('div');
+                item.className = 'saved-item';
+
+                const title = document.createElement('strong');
+                title.textContent = entry.label || 'Unnamed Camera';
+
+                const meta = document.createElement('div');
+                meta.className = 'saved-meta';
+                meta.textContent = `Last used: ${formatDate(entry.lastUsedAt)}`;
+
+                const urlLine = document.createElement('div');
+                urlLine.className = 'saved-meta';
+                urlLine.textContent = entry.rtspUrl;
+
+                const actions = document.createElement('div');
+                actions.className = 'saved-actions';
+
+                const useButton = document.createElement('button');
+                useButton.className = 'btn-secondary';
+                useButton.textContent = 'Use URL';
+                useButton.addEventListener('click', () => {
+                    rtspUrlInput.value = entry.rtspUrl;
+                    streamLabelInput.value = entry.label || '';
+                    streamNotesInput.value = entry.notes || '';
+                });
+
+                const startButton = document.createElement('button');
+                startButton.className = 'btn-primary';
+                startButton.textContent = 'Add';
+                startButton.addEventListener('click', () => {
+                    rtspUrlInput.value = entry.rtspUrl;
+                    streamLabelInput.value = entry.label || '';
+                    streamNotesInput.value = entry.notes || '';
+                    startStream(entry.rtspUrl);
+                });
+
+                actions.appendChild(useButton);
+                actions.appendChild(startButton);
+
+                item.appendChild(title);
+                item.appendChild(meta);
+                item.appendChild(urlLine);
+                item.appendChild(actions);
+
+                lastSessionList.appendChild(item);
+            });
+        }
+
+        async function loadSavedStreams() {
+            try {
+                const response = await fetch('/saved-streams');
+                if (!response.ok) return;
+                const data = await response.json();
+                renderSavedStreams(data.streams || []);
+            } catch (error) {
+                console.error('Failed to load saved streams', error);
+            }
+        }
+
+        function renderSavedStreams(streams) {
+            savedList.innerHTML = '';
+
+            if (!streams.length) {
+                const empty = document.createElement('div');
+                empty.className = 'saved-meta';
+                empty.textContent = 'No saved streams yet. Start one to keep it here.';
+                savedList.appendChild(empty);
+                return;
+            }
+
+            streams.forEach((stream) => {
+                const item = document.createElement('div');
+                item.className = 'saved-item';
+
+                const title = document.createElement('strong');
+                title.textContent = stream.label || 'Unnamed Camera';
+
+                const meta = document.createElement('div');
+                meta.className = 'saved-meta';
+                const screenshotCount = stream.screenshots ? stream.screenshots.length : 0;
+                meta.textContent = `Last started: ${formatDate(stream.lastStartedAt)} | Shots: ${screenshotCount}`;
+
+                const urlLine = document.createElement('div');
+                urlLine.className = 'saved-meta';
+                urlLine.textContent = stream.rtspUrl;
+
+                const labelInput = document.createElement('input');
+                labelInput.type = 'text';
+                labelInput.placeholder = 'Label';
+                labelInput.value = stream.label || '';
+
+                const notesInput = document.createElement('textarea');
+                notesInput.placeholder = 'Notes';
+                notesInput.value = stream.notes || '';
+
+                const actions = document.createElement('div');
+                actions.className = 'saved-actions';
+
+                const useButton = document.createElement('button');
+                useButton.className = 'btn-secondary';
+                useButton.textContent = 'Use URL';
+                useButton.addEventListener('click', () => {
+                    rtspUrlInput.value = stream.rtspUrl;
+                    streamLabelInput.value = stream.label || '';
+                    streamNotesInput.value = stream.notes || '';
+                });
+
+                const startButton = document.createElement('button');
+                startButton.className = 'btn-primary';
+                startButton.textContent = 'Start';
+                startButton.addEventListener('click', () => {
+                    rtspUrlInput.value = stream.rtspUrl;
+                    streamLabelInput.value = stream.label || '';
+                    streamNotesInput.value = stream.notes || '';
+                    startStream(stream.rtspUrl);
+                });
+
+                const saveButton = document.createElement('button');
+                saveButton.className = 'btn-secondary';
+                saveButton.textContent = 'Save';
+                saveButton.addEventListener('click', async () => {
+                    await updateSavedStream(stream.rtspUrl, labelInput.value, notesInput.value);
+                });
+
+                actions.appendChild(useButton);
+                actions.appendChild(startButton);
+                actions.appendChild(saveButton);
+
+                item.appendChild(title);
+                item.appendChild(meta);
+                item.appendChild(urlLine);
+                item.appendChild(labelInput);
+                item.appendChild(notesInput);
+                item.appendChild(actions);
+
+                savedList.appendChild(item);
+            });
+        }
+
+        const layoutPresets = {
+            default: {
+                label: 'Operator Desk',
+                layout: 'quad',
+                compact: false,
+                sidebar: true
+            },
+            lobby: {
+                label: 'Lobby Wall',
+                layout: 'nine',
+                compact: true,
+                sidebar: false
+            },
+            perimeter: {
+                label: 'Perimeter Sweep',
+                layout: 'focus',
+                compact: false,
+                sidebar: true
+            },
+            incident: {
+                label: 'Incident Focus',
+                layout: 'single',
+                compact: false,
+                sidebar: false
+            },
+            matrix: {
+                label: 'Matrix Max',
+                layout: 'sixteen',
+                compact: true,
+                sidebar: false
+            }
+        };
+
+        const UI_STATE_KEY = 'rtsp-control-deck-ui';
+        const FORM_STATE_KEY = 'rtsp-control-deck-form';
+        const LAST_SESSION_KEY = 'rtsp-control-deck-last-session';
+
+        function saveUiState(state) {
+            try {
+                localStorage.setItem(UI_STATE_KEY, JSON.stringify(state));
+            } catch (error) {
+                console.warn('Failed to save UI state', error);
+            }
+        }
+
+        function loadUiState() {
+            try {
+                const raw = localStorage.getItem(UI_STATE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (error) {
+                console.warn('Failed to load UI state', error);
+                return null;
+            }
+        }
+
+        function saveFormState(state) {
+            try {
+                localStorage.setItem(FORM_STATE_KEY, JSON.stringify(state));
+            } catch (error) {
+                console.warn('Failed to save form state', error);
+            }
+        }
+
+        function loadFormState() {
+            try {
+                const raw = localStorage.getItem(FORM_STATE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (error) {
+                console.warn('Failed to load form state', error);
+                return null;
+            }
+        }
+
+        function saveLastSession(entries) {
+            try {
+                localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(entries));
+            } catch (error) {
+                console.warn('Failed to save last session', error);
+            }
+        }
+
+        function loadLastSession() {
+            try {
+                const raw = localStorage.getItem(LAST_SESSION_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.warn('Failed to load last session', error);
+                return [];
+            }
+        }
+
+        function applyPreset(presetKey) {
+            const preset = layoutPresets[presetKey];
+            if (!preset) return;
+
+            streamGrid.dataset.layout = preset.layout;
+            layoutSelect.value = preset.layout;
+
+            appContainer.classList.toggle('compact', preset.compact);
+            toggleCompact.classList.toggle('toggle-active', preset.compact);
+
+            layoutContainer.classList.toggle('no-sidebar', !preset.sidebar);
+            toggleSidebar.classList.toggle('toggle-active', !preset.sidebar);
+            toggleSidebar.textContent = preset.sidebar ? 'Hide Sidebar' : 'Show Sidebar';
+
+            saveUiState({
+                preset: presetKey,
+                layout: preset.layout,
+                compact: preset.compact,
+                sidebar: preset.sidebar
+            });
+        }
+
+        layoutSelect.addEventListener('change', (event) => {
+            streamGrid.dataset.layout = event.target.value;
+            presetSelect.value = 'default';
+            saveUiState({
+                preset: 'default',
+                layout: event.target.value,
+                compact: appContainer.classList.contains('compact'),
+                sidebar: !layoutContainer.classList.contains('no-sidebar')
+            });
+        });
+
+        presetSelect.addEventListener('change', (event) => {
+            applyPreset(event.target.value);
+        });
+
+        toggleCompact.addEventListener('click', () => {
+            const isCompact = appContainer.classList.toggle('compact');
+            toggleCompact.classList.toggle('toggle-active', isCompact);
+            presetSelect.value = 'default';
+            saveUiState({
+                preset: 'default',
+                layout: streamGrid.dataset.layout || 'quad',
+                compact: isCompact,
+                sidebar: !layoutContainer.classList.contains('no-sidebar')
+            });
+        });
+
+        toggleSidebar.addEventListener('click', () => {
+            const isHidden = layoutContainer.classList.toggle('no-sidebar');
+            toggleSidebar.classList.toggle('toggle-active', isHidden);
+            toggleSidebar.textContent = isHidden ? 'Show Sidebar' : 'Hide Sidebar';
+            presetSelect.value = 'default';
+            saveUiState({
+                preset: 'default',
+                layout: streamGrid.dataset.layout || 'quad',
+                compact: appContainer.classList.contains('compact'),
+                sidebar: !isHidden
+            });
+        });
+
+        startButton.addEventListener('click', () => {
+            const rtspUrl = rtspUrlInput.value.trim();
+            startStream(rtspUrl);
+        });
+
+        [rtspUrlInput, streamLabelInput, streamNotesInput].forEach((input) => {
+            input.addEventListener('input', () => {
+                saveFormState({
+                    rtspUrl: rtspUrlInput.value,
+                    label: streamLabelInput.value,
+                    notes: streamNotesInput.value
+                });
+            });
+        });
+
+        loadSavedStreams();
+        renderLastSession(loadLastSession());
+        const initialState = loadUiState();
+        if (initialState && layoutPresets[initialState.preset]) {
+            applyPreset(initialState.preset);
+        } else if (initialState) {
+            streamGrid.dataset.layout = initialState.layout || 'quad';
+            layoutSelect.value = initialState.layout || 'quad';
+            appContainer.classList.toggle('compact', Boolean(initialState.compact));
+            toggleCompact.classList.toggle('toggle-active', Boolean(initialState.compact));
+            layoutContainer.classList.toggle('no-sidebar', initialState.sidebar === false);
+            toggleSidebar.classList.toggle('toggle-active', initialState.sidebar === false);
+            toggleSidebar.textContent = initialState.sidebar === false ? 'Show Sidebar' : 'Hide Sidebar';
+            presetSelect.value = initialState.preset || 'default';
+        } else {
+            applyPreset('default');
+        }
+
+        const initialForm = loadFormState();
+        if (initialForm) {
+            rtspUrlInput.value = initialForm.rtspUrl || '';
+            streamLabelInput.value = initialForm.label || '';
+            streamNotesInput.value = initialForm.notes || '';
+        }
+    </script>
+</body>
+</html>
