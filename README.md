@@ -65,6 +65,18 @@ npm start
 - Automatic cleanup of resources
 - Cross-browser compatibility
 
+## Why HLS
+
+This app converts RTSP to HLS (HTTP Live Streaming) before it reaches the browser.
+
+Benefits:
+- Works in most modern browsers without plugins
+- Handles variable network conditions with segment-based delivery
+- Uses standard HTTP, so it plays nicely with caching and CDNs
+
+Tradeoff:
+- Adds a few seconds of latency (this app uses short segments to keep it low)
+
 ## API Endpoints
 
 - `POST /start-stream` - Start a new stream
